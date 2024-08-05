@@ -1,26 +1,18 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
+  "name": "Guard-it",
   "version": "1.0",
-  "name": "guard-it",
-  "description": "An extension template using React and TypeScript. This template includes a content script using Tailwind.css. To see it in action, visit https://extension.js.org.",
-  "background": {
-    "service_worker": "./background.ts"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://*.extensioncreate.com/*"
-      ],
-      "js": [
-        "./content/content.tsx"
-      ]
-    }
+  "description": "Your extension description",
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
   ],
-  "action": {
-    "default_popup": "popup.html"
+  "background": {
+    "scripts": [
+      "background.ts"
+    ],
+    "persistent": true
   },
-  "icons": {
-    "16": "public/icon/icon_16.png",
-    "48": "public/icon/icon_48.png"
-  }
+  "browser_action": {}
 }
