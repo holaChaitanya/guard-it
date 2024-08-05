@@ -27,10 +27,10 @@ chrome.webRequest.onHeadersReceived.addListener(
         removeHeader('content-security-policy');
         removeHeader('content-security-policy-report-only');
 
-        setHeader('Content-Security-Policy',  "default-src 'self'; script-src 'self' 'report-sample'; style-src 'self' 'report-sample'; base-uri 'self'; object-src 'none'; connect-src 'self'; font-src 'self'; frame-src 'self'; img-src 'self'; manifest-src 'self'; media-src 'self'; worker-src 'none';");
+        setHeader('Content-Security-Policy-Report-Only',  "default-src 'self'; script-src 'self' 'report-sample'; style-src 'self' 'report-sample'; base-uri 'self'; object-src 'none'; connect-src 'self'; font-src 'self'; frame-src 'self'; img-src 'self'; manifest-src 'self'; media-src 'self'; worker-src 'none'; report-uri /csp-report");
 
         // Add Content-Security-Policy-Report-Only header
-        setHeader('Content-Security-Policy-Report-Only', "default-src 'none'; report-uri /csp-report");
+        // setHeader('Content-Security-Policy-Report-Only', "default-src 'none'; report-uri /csp-report");
 
         // setHeader('Content-Security-Policy-Report-Only', "hello world 123;");
 
