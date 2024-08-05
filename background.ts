@@ -86,8 +86,13 @@ function generateCSPFromViolations(): Promise<string> {
                     console.log('Processing violation:', { violatedDirective, blockedUri });
 
                     if (typeof violatedDirective === 'string' && typeof blockedUri === 'string') {
-                        const directive = violatedDirective.split(' ')[0];
+                        let directive = violatedDirective.split(' ')[0];
                         
+                        // Map 'script-src-elem' to 'script-src'
+                        if (directive === 'script-src-elem') directive = 'script-src';
+                        // Map 'style-src-elem' and 'style-src-attr' to 'style-src'
+                        if (directive === 'style-src-elem' || directive === 'style-src-attr') directive = 'style-src';
+
                         if (!directives.has(directive)) {
                             directives.set(directive, new Set(['\'self\'']));
                         }
@@ -105,6 +110,7 @@ function generateCSPFromViolations(): Promise<string> {
                 csp += `${directive} ${Array.from(uris).join(' ')}; `;
             });
 
+            console.log('Generated CSP:', csp);
             resolve(csp.trim());
         });
     });
