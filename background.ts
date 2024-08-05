@@ -65,30 +65,44 @@ function generateCSPFromViolations(): Promise<string> {
     return new Promise((resolve) => {
         chrome.storage.local.get('cspViolations', (result) => {
             const violations = result.cspViolations || [];
+            console.log('Stored violations:', violations);
+
             const directives = new Map<string, Set<string>>();
+
+            // Initialize default directives
+            const defaultDirectives = [
+                'default-src', 'script-src', 'style-src', 'object-src', 'base-uri',
+                'connect-src', 'font-src', 'frame-src', 'img-src', 'manifest-src',
+                'media-src', 'worker-src'
+            ];
+            defaultDirectives.forEach(directive => directives.set(directive, new Set(['\'self\''])));
 
             violations.forEach((v: any) => {
                 const violation = v['csp-report'];
                 if (violation && typeof violation === 'object') {
                     const violatedDirective = violation['violated-directive'];
                     const blockedUri = violation['blocked-uri'];
+                    
+                    console.log('Processing violation:', { violatedDirective, blockedUri });
 
                     if (typeof violatedDirective === 'string' && typeof blockedUri === 'string') {
                         const directive = violatedDirective.split(' ')[0];
-
+                        
                         if (!directives.has(directive)) {
-                            directives.set(directive, new Set());
+                            directives.set(directive, new Set(['\'self\'']));
                         }
-                        directives.get(directive)?.add(blockedUri);
+                        if (blockedUri !== '' && !blockedUri.startsWith('data:')) {
+                            directives.get(directive)?.add(blockedUri);
+                        }
                     }
                 }
             });
 
-            console.log({ violations, directives });
+            console.log('Processed directives:', Array.from(directives.entries()));
 
             let csp = '';
             directives.forEach((uris, directive) => {
-                csp += `${directive} ${Array.from(uris).join(' ')} 'self'; `;
+                csp += `${directive} ${Array.from(uris).join(' ')}; `;
             });
 
             resolve(csp.trim());
@@ -105,28 +119,30 @@ async function updateCSP() {
 }
 
 // Set up storage change listener
-chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && changes.cspViolations) {
-        updateCSP();
-    }
-});
+// chrome.storage.onChanged.addListener((changes, namespace) => {
+//     if (namespace === 'local' && changes.cspViolations) {
+//         updateCSP();
+//     }
+// });
 
 // Initial CSP generation
 updateCSP();
 
-// Modify the existing listener to use chrome.storage.local instead of localStorage
 chrome.webRequest.onBeforeRequest.addListener(
     (details) => {
         if (details.url.endsWith('/csp-report') && details.method === 'POST' && details.requestBody?.raw?.[0]?.bytes) {
             let postedString = decodeURIComponent(String.fromCharCode.apply(null, Array.from(new Uint8Array(details.requestBody.raw[0].bytes))));
             let payload = JSON.parse(postedString);
-
-            console.log('CSP Violation:', payload);
+            
+            console.log('New CSP Violation:', payload);
 
             chrome.storage.local.get('cspViolations', (result) => {
                 let violations = result.cspViolations || [];
                 violations.push(payload);
-                chrome.storage.local.set({ cspViolations: violations });
+                chrome.storage.local.set({ cspViolations: violations }, () => {
+                    console.log('Updated violations in storage:', violations);
+                    updateCSP(); // Trigger CSP update immediately
+                });
             });
 
             return { cancel: true };
