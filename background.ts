@@ -9,7 +9,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         //     return { responseHeaders: details.responseHeaders };
         // }
 
-        console.log({ details });
+        // console.log({ details });
 
         let responseHeaders = details.responseHeaders || [];
 
@@ -27,12 +27,17 @@ chrome.webRequest.onHeadersReceived.addListener(
         removeHeader('content-security-policy');
         removeHeader('content-security-policy-report-only');
 
-        setHeader('Content-Security-Policy-Report-Only', "hello world 123;");
+        setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; base-uri 'self'; form-action 'self'");
+
+        // Add Content-Security-Policy-Report-Only header
+        setHeader('Content-Security-Policy-Report-Only', "default-src 'none'; report-uri /csp-report");
+
+        // setHeader('Content-Security-Policy-Report-Only', "hello world 123;");
 
         setHeader('X-Frame-Options', 'hello world');
         setHeader('X-Custom-Header', 'read');
 
-        console.log({ responseHeaders });
+        // console.log({ responseHeaders });
 
         return { responseHeaders: responseHeaders };
     },
@@ -46,7 +51,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         if (details.requestHeaders) {
             const customHeader = { name: 'X-Custom-Header', value: 'MyCustomValue' };
             details.requestHeaders.push(customHeader);
-            console.log('Modified request headers:', JSON.stringify(details.requestHeaders, null, 2));
+            // console.log('Modified request headers:', JSON.stringify(details.requestHeaders, null, 2));
             return { requestHeaders: details.requestHeaders };
         }
         return { requestHeaders: details.requestHeaders };
@@ -55,12 +60,32 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     ['blocking', 'requestHeaders']
 );
 
-chrome.webRequest.onCompleted.addListener(
-    (details) => {
-        console.log('Completed request headers:', JSON.stringify(details.responseHeaders, null, 2));
-    },
-    { urls: ['<all_urls>'] },
-    ['responseHeaders']
+// Intercept CSP violation reports
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    if (details.url.endsWith('/csp-report') && details.method === 'POST' && details.requestBody?.raw?.[0]?.bytes) {
+      let postedString = decodeURIComponent(String.fromCharCode.apply(null, Array.from(new Uint8Array(details.requestBody.raw[0].bytes))));
+      let payload = JSON.parse(postedString);
+      
+      console.log('CSP Violation:', payload);
+
+      let violations = JSON.parse(localStorage.getItem('cspViolations') || '[]');
+      violations.push(payload);
+      localStorage.setItem('cspViolations', JSON.stringify(violations));
+
+      return { cancel: true };
+    }
+  },
+  { urls: ['<all_urls>'] },
+  ['blocking', 'requestBody']
 );
+
+// chrome.webRequest.onCompleted.addListener(
+//     (details) => {
+//         // console.log('Completed request headers:', JSON.stringify(details.responseHeaders, null, 2));
+//     },
+//     { urls: ['<all_urls>'] },
+//     ['responseHeaders']
+// );
 
 console.log('Background script initialized');
