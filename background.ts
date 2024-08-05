@@ -96,8 +96,18 @@ function generateCSPFromViolations(): Promise<string> {
                         if (!directives.has(directive)) {
                             directives.set(directive, new Set(['\'self\'']));
                         }
-                        if (blockedUri !== '' && !blockedUri.startsWith('data:')) {
-                            directives.get(directive)?.add(blockedUri);
+                        if (blockedUri !== '') {
+                            if (blockedUri === 'data' || blockedUri.startsWith('data:')) {
+                                directives.get(directive)?.add('data:');
+                            } else {
+                                try {
+                                    const url = new URL(blockedUri);
+                                    directives.get(directive)?.add(url.origin);
+                                } catch (e) {
+                                    // If it's not a valid URL, add it as is
+                                    directives.get(directive)?.add(blockedUri);
+                                }
+                            }
                         }
                     }
                 }
