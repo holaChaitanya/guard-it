@@ -89,6 +89,13 @@ function generateCSPFromViolations(): Promise<string> {
                 }
             });
 
+            if (directives.has('script-src')) {
+                directives.get('script-src')?.add('\'report-sample\'');
+            }
+            if (directives.has('style-src')) {
+                directives.get('style-src')?.add('\'report-sample\'');
+            }
+
             console.log('Processed directives:', Array.from(directives.entries()));
 
             let csp = '';
