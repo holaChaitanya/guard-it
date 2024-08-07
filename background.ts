@@ -24,19 +24,6 @@ chrome.webRequest.onHeadersReceived.addListener(
     ['blocking', 'responseHeaders']
 );
 
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    (details: chrome.webRequest.WebRequestHeadersDetails) => {
-        if (details.requestHeaders) {
-            const customHeader = { name: 'X-Custom-Header', value: 'MyCustomValue' };
-            details.requestHeaders.push(customHeader);
-            return { requestHeaders: details.requestHeaders };
-        }
-        return { requestHeaders: details.requestHeaders };
-    },
-    { urls: ['<all_urls>'] },
-    ['blocking', 'requestHeaders']
-);
-
 function generateCSPFromViolations(): Promise<string> {
     return new Promise((resolve) => {
         chrome.storage.local.get('cspViolations', (result) => {
